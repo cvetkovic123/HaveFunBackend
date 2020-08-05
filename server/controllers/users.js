@@ -36,7 +36,7 @@ module.exports = {
         }
       });
       const token = signToken(user);
-
+      const url = process.env.HOST_URL || process.env.CLIENT_URL;
       const data = {
         from: 'alexanderGrieves42@gmail.com',
         to: 'bojan.cvetkovic337@gmail.com',

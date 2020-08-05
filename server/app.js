@@ -22,11 +22,11 @@ app.use(bodyParser.urlencoded({ extended: false}));
 mongoose.set('useFindAndModify', false);
 
 if (process.env.NODE_ENV == 'test') {
-    mongoose.connect('mongodb://localhost/haveFunDEV', { useNewUrlParser: true, useCreateIndex: true, poolSize: 10, useUnifiedTopology: true })
+    mongoose.connect('mongodb://localhost/haveFunDEV', { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true })
         .then(() => { console.log("Connecting to MongoDb...") })
         .catch((err) => { console.log("Error while connecting to MongoDb", err) });
 } else if (process.env.NODE_ENV == 'prod') {
-    mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useCreateIndex: true, poolSize: 10, useUnifiedTopology: true })
+    mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true })
         .then(() => { console.log("Connecting to online MongoDb Atlas...") })
         .catch((err) => { console.log("Error while connecting to MongoDb Atlas", err) });
 }
