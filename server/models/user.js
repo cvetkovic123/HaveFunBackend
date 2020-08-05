@@ -3,6 +3,22 @@ const bcrypt = require('bcrypt');
 
 const Schema = mongoose.Schema;
 
+const imageSchema = new Schema({
+    fieldname: String,
+    originalname: String,
+    encoding: String,
+    mimeptype: String,
+    destination: String,
+    filename: String,
+    path: String,
+    localPath: String,
+    size: Number,
+    created_at: {
+        type: Date,
+        default: Date.now
+    }
+});
+
 const userSchema = new Schema({
     method: {
         type: String,
@@ -33,7 +49,8 @@ const userSchema = new Schema({
         },
         isAdmin: {
             type: Boolean
-        }
+        },
+        profileImage: imageSchema
     },
     google: {
         id: {

@@ -48,14 +48,19 @@ passport.use('local', new passportLocal({
     usernameField: 'email'
 }, async(email, password, done) => {
     try {
+        console.log('made it here');
+        console.log(email);
         const checkUser = await User.findOne({ 'local.email': email});
         if (!checkUser) {
-            return done(null, false);
+            return done('Email does not exist!', false);
+        }
+        if (!checkUser.local.isVerified) {
+            return done('The account was not verified!', false);
         }
     
         const checkUserPassword = await checkUser.isValidPassword(password);
         if (!checkUserPassword) {
-            return done(null, false);
+            return done('Password is not valid!', false);
         }
     
         done(null, checkUser);
@@ -63,4 +68,19 @@ passport.use('local', new passportLocal({
         done(error, false);
     }
 }));
+
+passport.use('profileImageUpload', new JwtStrategy({
+    jwtFromRequest: ExtractJwt.fromHeader('authorization'),
+    secretOrKey: process.env.USER_JWT_KEY
+}, async(payload, done) => {
+    try {
+        const checkUser = await User.findById(payload.sub);
+        if (!checkUser) {
+            return done('Email not found!', false);
+        }
+        done(null, checkUser);
+    } catch(error) {
+        done(error, false);
+    }
+}))
 

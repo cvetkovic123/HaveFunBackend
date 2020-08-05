@@ -6,14 +6,12 @@ const
     cors = require('cors'),
     morgan = require('morgan'),
 
-// routes require
     user = require('./routes/user');
-
+    
 const app = express();
 
 app.use(morgan('dev'));
-
-app.use(express.static('/public'));
+app.use(express.static('./public'));
 
 app.use(cors({ credentials: true, origin: true }));
 

@@ -7,6 +7,7 @@ signToken = (body) => {
   return JWT.sign({
     iss: "HaveFun",
     sub: body.id,
+    name: body.local.name,
     email: body.local.email,
     iat: new Date().getTime(),
     exp: new Date().setDate(new Date().getDate() + 1)
@@ -55,7 +56,7 @@ module.exports = {
     },
 
     emailVerification: async(req, res, next) => {
-      
+
       const user = await User.findByIdAndUpdate(req.user.id,
         {"local.isVerified": true }, {new: true})
       if (!user) {
@@ -69,12 +70,48 @@ module.exports = {
     },
 
     signIn: async(req, res, next) => {
-
       const token = signToken(req.user);
       res.status(200).send({ message: `${token}`});
     },
 
-    secret: async(req, res, next) => {
-      res.status(200).send(`UsersContoller secret called!`);
+    imageUpload: async(req, res, next) => {
+      const url = req.protocol + '://' + req.get('host');
+      const fs = require('fs');
+      const { promisify } = require('util');
+      const unlinkAsync = promisify(fs.unlink);
+
+      const checkIfUserHasProfileImage = await User.findById(req.user._id);
+      if (checkIfUserHasProfileImage.local.profileImage) {
+        unlinkAsync(checkIfUserHasProfileImage.local.profileImage.path);
+      }
+      
+      const checkUser = await User.findByIdAndUpdate(req.user._id, 
+        {"local.profileImage" : {
+          fieldname: req.file.fieldname,
+          originalname: req.file.originalname,
+          encoding: req.file.encoding,
+          mimetype: req.file.mimetype,
+          destination: req.file.destination,
+          filename: req.file.filename,
+          path: req.file.path,
+          localPath: url + "/profileImage/" + req.file.filename,
+          size: req.file.size
+        }}, {new: true});
+      if (!checkUser) {
+        res.status(400).send({ message: 'Image could not be saved!'});
+      }
+
+      await checkUser.save().
+        then(() => { res.status(200).send({ message: 'Image uploaded!', path: checkUser.local.profileImage.localPath})}).
+        catch((error) => { res.status(404).send(`Error uploading!${error}`)});
+    },
+
+    getProfileImage: async(req, res, next) => {
+      const getUser = await User.findById(req.user._id);
+      if (!getUser) {
+        res.status(404).send({ message: "User not found"});
+      }
+
+      res.status(200).send({message: getUser.local.profileImage.localPath});
     }
 }
