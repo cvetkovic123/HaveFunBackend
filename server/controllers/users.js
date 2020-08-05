@@ -42,7 +42,7 @@ module.exports = {
         to: 'bojan.cvetkovic337@gmail.com',
         subject: 'HaveFun activation link',
         text: `
-        <p>${process.env.CLIENT_URL}/auth/activate?id=${token}</p>
+        <p>${url}/auth/activate?id=${token}</p>
         `
       };
        
