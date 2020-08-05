@@ -26,9 +26,9 @@ if (process.env.NODE_ENV == 'test') {
         .then(() => { console.log("Connecting to MongoDb...") })
         .catch((err) => { console.log("Error while connecting to MongoDb", err) });
 } else {
-    mongoose.connect('mongodb://localhost/haveFunPROD', { useNewUrlParser: true, useCreateIndex: true, poolSize: 10, useUnifiedTopology: true })
-        .then(() => { console.log("Connecting to MongoDb...") })
-        .catch((err) => { console.log("Error while connecting to MongoDb", err) });
+    mongoose.connect('mongodb://heroku_jgrc9kdw:105ef5rr7m56d7emcotf1pgjjo@ds261136.mlab.com:61136/heroku_jgrc9kdw', { useNewUrlParser: true, useCreateIndex: true, poolSize: 10, useUnifiedTopology: true })
+        .then(() => { console.log("Connecting to online MongoDb Atlas...") })
+        .catch((err) => { console.log("Error while connecting to MongoDb Atlas", err) });
 }
 
 // routes   
