@@ -2,15 +2,39 @@ const Joi = require('@hapi/joi');
 
 module.exports = { 
     schemas: {
-        signUpSchema : Joi.object({
-            name: Joi.string().required(),
+        signUpSchema: Joi.object({
+            name: Joi.string().min(5).max(25),
+            email: Joi.string().email(),
+            password: Joi.string().min(6).max(25)
+        }),
+    
+        signInSchema: Joi.object({
             email: Joi.string().email().required(),
             password: Joi.string().required()
         }),
-    
-        signInSchema : Joi.object({
+
+        postsSchema: Joi.object({
+            title: Joi.string().required(),
+            content: Joi.string().required()
+        }),
+
+        passwordReset: Joi.object({
+            email: Joi.string().min(6).max(25).required(),
+            password: Joi.string().min(6).max(25).required(),
+            newPassword: Joi.string().min(6).max(25).required()
+        }),
+
+        nameReset: Joi.object({
+            name: Joi.string().min(5).max(25)
+        }),
+
+        forgotPassword: Joi.object({
+            email: Joi.string().email().required()
+        }),
+
+        forgotChangePassword: Joi.object({
             email: Joi.string().email().required(),
-            password: Joi.string().required()
+            newPassword: Joi.string().min(6).max(25).required()
         })
     },
 

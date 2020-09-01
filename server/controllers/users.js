@@ -1,31 +1,34 @@
 const { User } = require('../models/user');
-const JWT = require('jsonwebtoken');
 const mailgun = require('mailgun-js')({apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN_NAME});
+const bcrypt = require('bcrypt');
+const utils = require('../lib/utils');
 
-signToken = (body) => {
-  console.log('body', body.local.email);
-  return JWT.sign({
-    iss: "HaveFun",
-    sub: body.id,
-    name: body.local.name,
-    email: body.local.email,
-    iat: new Date().getTime(),
-    exp: new Date().setDate(new Date().getDate() + 1)
-  }, process.env.USER_JWT_KEY);
-}
+const fs = require('fs');
+const { promisify } = require('util');
+const { Post } = require('../models/posts');
+const unlinkAsync = promisify(fs.unlink);
 
+
+
+// 1800000
 module.exports = {
+
+    //SIGN UP
+     
     signUp: async(req, res, next) => {
+      // get data from body
       const {
         name,
         email,
         password
       } = req.value.body;
 
-      const checkUserEmail = await User.findOne({ "local.email": email});
-      if (checkUserEmail) return res.status(403).send({ message: "EMAIL_EXISTS"});
+      // check if email exists locally
+      const checkLocalUserEmail = await User.findOne({ "local.email": email});
+      // const checkGoogleUserEmail = await User.findOne({ "google.email": email});
+      if (checkLocalUserEmail ) return res.status(403).send({ message: "EMAIL_EXISTS"});
 
-      
+      // create user
       const user = new User({
         method: 'local',
         local: {
@@ -35,7 +38,181 @@ module.exports = {
           isVerified: false
         }
       });
-      const token = signToken(user);
+      // create signed token
+      const token = utils.signToken(user);
+      res.send(token);
+      // set url for host if it exists ( for production, or instead use client url)
+      const url = process.env.HOST_URL || process.env.CLIENT_URL;
+      // prepare mailgun
+      const data = {
+        from: 'alexanderGrieves42@gmail.com',
+        to: 'bojan.cvetkovic337@gmail.com',
+        subject: 'HaveFun activation link',
+        text: `
+        <p>${url}/auth/activate?id=${token}</p>
+        `
+      };
+        
+      // send mailgun 
+      mailgun.messages().send(data, function (error, body) {
+        console.log(body);
+        if (error) {
+          res.status(500).send({message: "Could not send mailgun message for user verification"});
+        }
+      });
+
+      // success
+      await user.save().
+        then(() => res.status(200).send({ message: `Local Sign Up Success. Please verify email!`}))
+        .catch((error) => res.status(400).send({ message: `Local Sign Up Failed!${error}`}));
+    },
+
+
+    // EMAIL VERIFICATION
+    emailVerification: async(req, res, next) => {
+      // check if user is verified
+      const user = await User.findByIdAndUpdate(req.user.id,
+        {"local.isVerified": true }, {new: true})
+      if (!user) {
+        res.send({message: "User not found"});
+      }
+      // success
+      res.send({ message: 'Email successfully verified'});
+    },
+
+
+    // SIGN IN 
+    signIn: async(req, res, next) => {
+      // make token out of authentification token
+      const token = utils.signToken(req.user);
+      // success
+      res.status(200).send({ message: `${token}`});
+    },
+
+    // FORGOT PASSWORD
+
+    forgotPassword: async(req, res, next) => {
+
+      // check if user exists
+      const user = await User.findOne({"local.email": req.body.email});
+
+      if (!user) {
+        res.status(400).send({ message: "EMAIL_NOT_FOUND"});
+      }
+      // if user is not verified 
+      if (!user.local.isVerified) {
+        res.status(400).send({ message: "This email exists, but it was not verified"});
+      }
+
+      const token = utils.passwordResetToken(req.body);
+
+      const url = process.env.HOST_URL || process.env.CLIENT_URL;
+      // prepare mailgun
+      const data = {
+        from: 'alexanderGrieves42@gmail.com',
+        to: 'bojan.cvetkovic337@gmail.com',
+        subject: 'HaveFun activation link',
+        text: `
+        <p>${url}/auth/passwordReset?id=${token}</p>
+        `
+      };
+        
+      // send mailgun 
+      mailgun.messages().send(data, function (error, body) {
+        console.log(body);
+        if (error) {
+          res.status(500).send({message: "Could not send mailgun message for user verification"});
+        }
+      });
+
+      res.status(200).send({ message: "A password reset token was sent to your email."});
+    },
+
+
+    forgotChangePassword: async(req, res, next) => {
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(req.body.newPassword, salt);
+      
+      // update new hashed password with old one
+      const newPasswordUpdate = await User.findByIdAndUpdate(req.user._id,{ "local.password": passwordHash});
+
+      // if fails 
+      if (!newPasswordUpdate) {
+        return res.status(404).send({ message: "New password could not be updated"});
+      }
+
+      // success
+      res.status(200).send({ message: "Password changed successfully"});
+    },
+
+
+    // GOOGLE OAUTH
+    googleOauth: async(req, res, next) => {
+      console.log('made it here', req);
+      const token = signGoogleToken(req.user);
+
+      res.status(200).send({ message: token});
+    },
+
+    // IMAGE UPLOAD
+    imageUpload: async(req, res, next) => {
+      // create url for image path
+      const url = req.protocol + '://' + req.get('host');
+
+      const user = await User.findById(req.user._id);
+      // check if user exists and if he already has a profile picture
+      if (!user && user.profileImage) {
+        unlinkAsync(user.profileImage.path);
+      }
+      
+      // update profile image
+      const checkUser = await User.findByIdAndUpdate(req.user._id, 
+        {"profileImage" : {
+          fieldname: req.file.fieldname,
+          originalname: req.file.originalname,
+          encoding: req.file.encoding,
+          mimetype: req.file.mimetype,
+          destination: req.file.destination,
+          filename: req.file.filename,
+          path: req.file.path,
+          localPath: url + "/profileImage/" + req.file.filename,
+          size: req.file.size
+        }}, {new: true});
+        // if an error occured
+        if (!checkUser) {
+          res.status(400).send({ message: 'Image could not be saved!'});
+        }
+        
+        // success
+        await checkUser.save().
+          then(() => { res.status(200).send({ message: 'Image uploaded!', path: checkUser.profileImage.localPath})}).
+          catch((error) => { res.status(400).send(`Error uploading!${error}`)});
+    },
+
+    // GET PROFILE IMAGE
+    getProfileImage: async(req, res, next) => {
+
+      const getUser = await User.findById(req.user._id);
+      if (!getUser) {
+        res.status(404).send({ message: "User not found"});
+      }
+
+      if (!getUser.profileImage) {
+        res.status(200).send({ message: "User has not yet uploaded a profile image"});
+      }
+      
+      res.status(200).send({message: getUser.profileImage.localPath});
+    },
+
+
+    // EMAIL RE-VERIFICATION
+    resendEmailForVerification: async(req, res, next) => {
+
+      const getUser = await User.findOne({"local.email": req.body.email});
+      if (!getUser) {
+        res.status(404).send({ message: "EMAIL_DOES_NOT_EXIST" });
+      }
+      const token = utils.signToken(getUser);
       const url = process.env.HOST_URL || process.env.CLIENT_URL;
       const data = {
         from: 'alexanderGrieves42@gmail.com',
@@ -49,69 +226,80 @@ module.exports = {
       mailgun.messages().send(data, function (error, body) {
         console.log(body);
       });
-      console.log(token);
-      await user.save().
-        then(() => res.status(200).send({ message: `Local Sign Up Success. Please verify email!`}))
+      await getUser.save()
+        .then(() => res.status(200).send({ message: `Email was resent,try again to verify your email!`}))
         .catch((error) => res.status(400).send({ message: `Local Sign Up Failed!${error}`}));
     },
 
-    emailVerification: async(req, res, next) => {
-
-      const user = await User.findByIdAndUpdate(req.user.id,
-        {"local.isVerified": true }, {new: true})
-      if (!user) {
-        res.send({message: "user not found"});
-      }
-      await user.save().
-      then(() => res.status(200).send({ message: `Congrats dipshit. Email verified!`}))
-      .catch((error) => res.status(400).send({ message: `YOU FUCKED UP AGAIN!:${error}`}));
-      res.send({ message: 'Email verified dipshit'});
-
-    },
-
-    signIn: async(req, res, next) => {
-      const token = signToken(req.user);
-      res.status(200).send({ message: `${token}`});
-    },
-
-    imageUpload: async(req, res, next) => {
-      const url = req.protocol + '://' + req.get('host');
-      const fs = require('fs');
-      const { promisify } = require('util');
-      const unlinkAsync = promisify(fs.unlink);
-
-      const checkIfUserHasProfileImage = await User.findById(req.user._id);
-      if (checkIfUserHasProfileImage.local.profileImage) {
-        unlinkAsync(checkIfUserHasProfileImage.local.profileImage.path);
-      }
-      
-      const checkUser = await User.findByIdAndUpdate(req.user._id, 
-        {"local.profileImage" : {
-          fieldname: req.file.fieldname,
-          originalname: req.file.originalname,
-          encoding: req.file.encoding,
-          mimetype: req.file.mimetype,
-          destination: req.file.destination,
-          filename: req.file.filename,
-          path: req.file.path,
-          localPath: url + "/profileImage/" + req.file.filename,
-          size: req.file.size
-        }}, {new: true});
+    changePassword: async(req, res, next) => {
+      // get user we want to edit
+      const checkUser = await User.findById(req.user._id);
       if (!checkUser) {
-        res.status(400).send({ message: 'Image could not be saved!'});
+        res.status(404).send({ message: 'User not found when changing password - logged In!'});
+      }
+      // check if old password is still valid, just to be safe
+      const isValidOldPassword = checkUser.isValidPassword(req.body.password);
+      if (!isValidOldPassword) {
+        res.status(400).send({ message: "Old password not correct!"});
       }
 
-      await checkUser.save().
-        then(() => { res.status(200).send({ message: 'Image uploaded!', path: checkUser.local.profileImage.localPath})}).
-        catch((error) => { res.status(404).send(`Error uploading!${error}`)});
+      // salt new password and hash it
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(req.body.newPassword, salt);
+      
+      // update new hashed password with old one
+      const newPasswordUpdate = await User.findByIdAndUpdate(req.user._id,{ "local.password": passwordHash});
+
+      // if fails 
+      if (!newPasswordUpdate) {
+        return res.status(404).send({ message: "New password could not be updated"});
+      }
+
+      // success
+      res.status(200).send({ message: "Password changed successfully"});
     },
 
-    getProfileImage: async(req, res, next) => {
-      const getUser = await User.findById(req.user._id);
-      if (!getUser) {
-        res.status(404).send({ message: "User not found"});
+    editName: async(req, res, next) => {
+      // find name and update it, using patch crud here so it only updates that single piece of data
+      const changeName = await User.findByIdAndUpdate(req.user._id,{"local.name": req.body.name}, {new: true});
+      if (!changeName) return res.status(400).send({ message: "Name could not be updated"});
+
+      // success
+      res.status(200).send({ message: "Name updated successfully"});
+    },
+
+
+    deleteProfile: async(req, res, next) => {
+      // delete profile picture from storage
+      const user = await User.findById(req.user._id);
+      if (user.profileImage) {
+        unlinkAsync(user.profileImage.path);
+      }      
+
+      const userPosts = user.posts;
+      // list through post id's in user posts
+      for (let postCounter in userPosts) {
+        // delete images of each post from storage if it exists
+        const post = await Post.findById(userPosts[postCounter]);
+        if (post.picture) {
+          unlinkAsync(post.picture.path);
+        }
+        // delete post associated with user
+        await Post.findByIdAndDelete(userPosts[postCounter]);
       }
 
-      res.status(200).send({message: getUser.local.profileImage.localPath});
+      // find and delete profile with id supplied in header
+      const deleteProfile = await User.findByIdAndDelete(req.user._id);
+      if (!deleteProfile) return res.status(400).send({ message: "Profile could not be deleted"});
+
+      // if deleted 
+      res.status(200).send({message: "Profile deleted successfully"});
+    },
+  
+    // SECRET
+    secret: async(req, res, next) => {
+      console.log('made it here');
+      res.send({ secret: "Resource"});
     }
+
 }

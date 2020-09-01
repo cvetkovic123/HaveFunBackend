@@ -27,30 +27,22 @@ const userSchema = new Schema({
     },
     local: {
         name: {
-            type: String,
-            required: true
+            type: String
         },
         password: {
-            type: String,
-            required: true
+            type: String
         },
         email: {
             type: String,
             unique: true,
-            lowercase: true,
-            required: true
-        },
-        date: {
-            type: Date,
-            default: Date.now
+            lowercase: true
         },
         isVerified: {
             type: Boolean,
         },
         isAdmin: {
             type: Boolean
-        },
-        profileImage: imageSchema
+        }
     },
     google: {
         id: {
@@ -59,6 +51,9 @@ const userSchema = new Schema({
         email: {
             type: String,
             lowercase: true
+        },
+        name: {
+            type: String
         }
     },
     facebook: {
@@ -68,18 +63,30 @@ const userSchema = new Schema({
         email: {
             type: String,
             lowercase: true
+        },
+        name: {
+            type: String
         }
-    }
+    },
+    profileImage: imageSchema,
+    date: {
+        type: Date,
+        default: Date.now
+    },
+    posts: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Post'
+    }]
 });
 
 // this will happen before the save() method in the controller
 userSchema.pre('save', async function (next) { // next get used as a callback 
     try {
-        if (!this.isModified('local.password')) {
-            return next();
-        }
         if (this.method !== 'local') {
             next();
+        }
+        if (!this.isModified('local.password')) {
+            return next();
         }
         // generate a salt
         const salt = await bcrypt.genSalt(10);
