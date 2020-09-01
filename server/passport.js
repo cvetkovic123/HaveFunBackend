@@ -153,6 +153,7 @@ passport.use('googleOauth2', new googleStrategy({
         });
         
         await newUser.save();
+        done(null, newUser);
         } catch(error) {
             console.log('Error backend', error);
         }
@@ -176,18 +177,4 @@ passport.use('profileImageUpload', new JwtStrategy({
         done(error, false);
     }
 }))
-
-
-passport.use('googleOauth', new googleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'http://localhost:3300/googleOauth/callback'
-}, async (accessToken, refreshToken, profile, cb) => {
-    try {
-        console.log('profile', profile);
-
-    } catch(error) {
-        done(error, false, error.message);
-    }
-}));
 

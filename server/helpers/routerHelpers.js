@@ -42,8 +42,9 @@ module.exports = {
         return (req, res, next) => {
             const validate = schema.validate(req.body);
             if (validate.error) {
-            res.status(400).send(validate.error.details[0].message);
+            return res.status(400).send(validate.error.details[0].message);
           }
+          console.log('why is it running');
           if (!req.value) { req.value = {} };
           req.value['body'] = validate.value;
           next();

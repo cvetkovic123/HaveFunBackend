@@ -13,8 +13,7 @@ const
 const app = express();
 
 app.use(function(req, res, next) {
-  console.log('alo breeee', req);
-  res.header("Access-Control-Allow-Origin", 'http://localhost:4200'); // update to match the domain you will make the request from
+  res.header("Access-Control-Allow-Origin", process.env.CLIENT_URL + '/auth' || process.env.HOST_URL + '/auth'); // update to match the domain you will make the request from
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
   res.header("Access-Control-Allow-Headers", "Authorization, Content-Type");
   next();
@@ -26,7 +25,7 @@ app.use(express.static('./public'));
 
 var originsWhitelist = [
       //this is my front-end url for development
-     'http://localhost:4200'
+     process.env.CLIENT_URL || process.env.HOST_URL
   ];
   var corsOptions = {
     origin: function(origin, callback){

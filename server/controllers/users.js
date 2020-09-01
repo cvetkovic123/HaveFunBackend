@@ -14,7 +14,6 @@ const unlinkAsync = promisify(fs.unlink);
 module.exports = {
 
     //SIGN UP
-     
     signUp: async(req, res, next) => {
       // get data from body
       const {
@@ -26,7 +25,7 @@ module.exports = {
       // check if email exists locally
       const checkLocalUserEmail = await User.findOne({ "local.email": email});
       // const checkGoogleUserEmail = await User.findOne({ "google.email": email});
-      if (checkLocalUserEmail ) return res.status(403).send({ message: "EMAIL_EXISTS"});
+      if (checkLocalUserEmail ) return res.status(200).send({ message: "This email is already registered. :)"});
 
       // create user
       const user = new User({
@@ -40,7 +39,6 @@ module.exports = {
       });
       // create signed token
       const token = utils.signToken(user);
-      res.send(token);
       // set url for host if it exists ( for production, or instead use client url)
       const url = process.env.HOST_URL || process.env.CLIENT_URL;
       // prepare mailgun
@@ -56,9 +54,7 @@ module.exports = {
       // send mailgun 
       mailgun.messages().send(data, function (error, body) {
         console.log(body);
-        if (error) {
-          res.status(500).send({message: "Could not send mailgun message for user verification"});
-        }
+        if (error) return res.status(500).send({message: "Could not send mailgun message for user verification"});
       });
 
       // success
@@ -73,9 +69,7 @@ module.exports = {
       // check if user is verified
       const user = await User.findByIdAndUpdate(req.user.id,
         {"local.isVerified": true }, {new: true})
-      if (!user) {
-        res.send({message: "User not found"});
-      }
+      if (!user) return res.send({message: "User not found"});
       // success
       res.send({ message: 'Email successfully verified'});
     },
@@ -96,13 +90,10 @@ module.exports = {
       // check if user exists
       const user = await User.findOne({"local.email": req.body.email});
 
-      if (!user) {
-        res.status(400).send({ message: "EMAIL_NOT_FOUND"});
-      }
+      if (!user) return res.status(400).send({ message: "EMAIL_NOT_FOUND"});
       // if user is not verified 
-      if (!user.local.isVerified) {
-        res.status(400).send({ message: "This email exists, but it was not verified"});
-      }
+      if (!user.local.isVerified) return res.status(400).send({ message: "This email exists, but it was not verified"});
+
 
       const token = utils.passwordResetToken(req.body);
 
@@ -120,9 +111,7 @@ module.exports = {
       // send mailgun 
       mailgun.messages().send(data, function (error, body) {
         console.log(body);
-        if (error) {
-          res.status(500).send({message: "Could not send mailgun message for user verification"});
-        }
+        if (error) return res.status(500).send({message: "Could not send mailgun message for user verification"});
       });
 
       res.status(200).send({ message: "A password reset token was sent to your email."});
@@ -137,9 +126,7 @@ module.exports = {
       const newPasswordUpdate = await User.findByIdAndUpdate(req.user._id,{ "local.password": passwordHash});
 
       // if fails 
-      if (!newPasswordUpdate) {
-        return res.status(404).send({ message: "New password could not be updated"});
-      }
+      if (!newPasswordUpdate) return res.status(404).send({ message: "New password could not be updated"});
 
       // success
       res.status(200).send({ message: "Password changed successfully"});
@@ -179,10 +166,8 @@ module.exports = {
           size: req.file.size
         }}, {new: true});
         // if an error occured
-        if (!checkUser) {
-          res.status(400).send({ message: 'Image could not be saved!'});
-        }
-        
+        if (!checkUser) return res.status(400).send({ message: 'Image could not be saved!'});
+
         // success
         await checkUser.save().
           then(() => { res.status(200).send({ message: 'Image uploaded!', path: checkUser.profileImage.localPath})}).
@@ -193,13 +178,9 @@ module.exports = {
     getProfileImage: async(req, res, next) => {
 
       const getUser = await User.findById(req.user._id);
-      if (!getUser) {
-        res.status(404).send({ message: "User not found"});
-      }
+      if (!getUser) return res.status(404).send({ message: "User not found"});
 
-      if (!getUser.profileImage) {
-        res.status(200).send({ message: "User has not yet uploaded a profile image"});
-      }
+      if (!getUser.profileImage) return res.status(200).send({ message: "User has not yet uploaded a profile image"});
       
       res.status(200).send({message: getUser.profileImage.localPath});
     },
@@ -209,9 +190,8 @@ module.exports = {
     resendEmailForVerification: async(req, res, next) => {
 
       const getUser = await User.findOne({"local.email": req.body.email});
-      if (!getUser) {
-        res.status(404).send({ message: "EMAIL_DOES_NOT_EXIST" });
-      }
+      if (!getUser) return res.status(404).send({ message: "EMAIL_DOES_NOT_EXIST" });
+
       const token = utils.signToken(getUser);
       const url = process.env.HOST_URL || process.env.CLIENT_URL;
       const data = {
@@ -234,14 +214,12 @@ module.exports = {
     changePassword: async(req, res, next) => {
       // get user we want to edit
       const checkUser = await User.findById(req.user._id);
-      if (!checkUser) {
-        res.status(404).send({ message: 'User not found when changing password - logged In!'});
-      }
+      if (!checkUser) return res.status(404).send({ message: 'User not found when changing password - logged In!'});
+
       // check if old password is still valid, just to be safe
       const isValidOldPassword = checkUser.isValidPassword(req.body.password);
-      if (!isValidOldPassword) {
-        res.status(400).send({ message: "Old password not correct!"});
-      }
+      if (!isValidOldPassword) return res.status(400).send({ message: "Old password not correct!"});
+
 
       // salt new password and hash it
       const salt = await bcrypt.genSalt(10);
@@ -251,9 +229,8 @@ module.exports = {
       const newPasswordUpdate = await User.findByIdAndUpdate(req.user._id,{ "local.password": passwordHash});
 
       // if fails 
-      if (!newPasswordUpdate) {
-        return res.status(404).send({ message: "New password could not be updated"});
-      }
+      if (!newPasswordUpdate) return res.status(404).send({ message: "New password could not be updated"});
+
 
       // success
       res.status(200).send({ message: "Password changed successfully"});

@@ -28,20 +28,26 @@ const storage = multer.diskStorage({
         cb(null, name + '-' + Date.now() + '.' + ext);
     }
 });
+const port = process.env.CLIENT_URL || process.env.HOST_URL;
+const passportLocalSignIn = passport.authenticate('local', 
+    {session: false});
+const passportLocalVerification = passport.authenticate('local-verification', 
+    {session: false});
+const passportImageVerification = passport.authenticate('profileImageUpload', 
+    {session: false});
+const passportLocalEmailAgainVerification = passport.authenticate('local-verification-again', 
+    {session: false});
 
-const passportLocalSignIn = passport.authenticate('local', {session: false});
-const passportLocalVerification = passport.authenticate('local-verification', {session: false});
-const passportImageVerification = passport.authenticate('profileImageUpload', {session: false});
-const passportLocalEmailAgainVerification = passport.authenticate('local-verification-again', {session: false});
-
-const googleToken = passport.authenticate('googleOauth2', {scope: ['profile', 'email']}, {session: false});
-const googleAuth = passport.authenticate(
-    'googleOauth2', 
-    {session: false, successRedirect: 'http://localhost:4200/popular', failureRedirect: 'http://localhost:4200/auth'});
+const googleAuth = passport.authenticate('googleOauth2', 
+    {scope: ['profile', 'email']}, {session: false});
+const googleRedirect = passport.authenticate('googleOauth2', 
+    {session: false, successRedirect: port + '/popular', failureRedirect: port + '/auth'});
 
 
-const userAuthorization = passport.authenticate('jwt', {session: false});
-const userAuthorizationPasswordChange = passport.authenticate('forgotPasswordChange', {session: false});
+const userAuthorization = passport.authenticate('jwt', 
+    {session: false});
+const userAuthorizationPasswordChange = passport.authenticate('forgotPasswordChange', 
+    {session: false});
 
 
 router.route('/signUp')
@@ -75,19 +81,11 @@ router.route('/getProfileImage')
 
 router.route('/auth/google')
     .get(
-        // async (req, res, next) => {
-        //     res.header("Access-Control-Allow-Origin", 'http://localhost:4200'); // update to match the domain you will make the request from
-        //     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-        //     console.log('bla');
-        //     next();
-        // },
-        googleToken);
-        
-router.route('/auth/google/callback')
-    .get(        
         googleAuth,
         UsersController.googleOauth);
-
+        
+router.route('/auth/google/callback')
+    .get(googleRedirect);
 
 router.route('/resendEmailVerification')
     .post( 

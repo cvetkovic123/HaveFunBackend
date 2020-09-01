@@ -9,7 +9,6 @@ module.exports = {
     newPost: async(req, res, next) => {
         const url = req.protocol + '://' + req.get('host');
         
-        console.log(req.file);
         const {
             title,
             content
