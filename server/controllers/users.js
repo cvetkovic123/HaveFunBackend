@@ -102,7 +102,7 @@ module.exports = {
       const data = {
         from: 'alexanderGrieves42@gmail.com',
         to: 'bojan.cvetkovic337@gmail.com',
-        subject: 'HaveFun activation link',
+        subject: 'HaveFun forgot password link',
         text: `
         <p>${url}/auth/passwordReset?id=${token}</p>
         `
@@ -126,10 +126,10 @@ module.exports = {
       const newPasswordUpdate = await User.findByIdAndUpdate(req.user._id,{ "local.password": passwordHash});
 
       // if fails 
-      if (!newPasswordUpdate) return res.status(404).send({ message: "New password could not be updated"});
+      if (!newPasswordUpdate) return res.status(404).send({ message: "New password could not be updated!"});
 
       // success
-      res.status(200).send({ message: "Password changed successfully"});
+      res.status(200).send({ message: "Password changed successfully!"});
     },
 
 

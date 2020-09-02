@@ -131,17 +131,17 @@ passport.use('googleOauth2', new googleStrategy({
     callbackURL: '/users/auth/google/callback'
     }, async (accessToken, refreshToken, profile, done) => {
         try {
-            console.log('accessToken', accessToken);
-            console.log('refeshToken', refreshToken);
-            console.log('profile', profile);
+            // console.log('accessToken', accessToken);
+            // console.log('refeshToken', refreshToken);
+            // console.log('profile', profile);
             
         const checkUser = await User.findOne({"google.id": profile.id}, function (err, user) {
-            return done(err, user);
+            if (err) {
+                done(err, null);
+            }
         }); 
         
-        if (!checkUser) {
-            done("User already signed up", null);
-        }
+        if (checkUser) return done("User already signed up", null);
 
         const newUser = new User({
             method: 'google',
