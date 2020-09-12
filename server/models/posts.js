@@ -22,17 +22,14 @@ const postSchema = new Schema({
     title: {
         type: String
     },
-    content: {
-        type: String
-    },
-    likes: {
+    points: {
         type: Number
     },
-    dislikes: {
-        type: Number
-    },
-
-    created_at: {
+    whoUpvoted: [{
+        userId: Schema.Types.ObjectId,
+        isUpvoted: false
+    }],
+    createdAt: {
         type: Date,
         default: Date.now
     },

@@ -6,6 +6,7 @@ const UsersController = require('../controllers/users');
 const { validateBody, schemas } = require('../helpers/routerHelpers');
 
 const passportConfig = require('../passport');
+const { User } = require('../models/user');
 
 const MIME_TYPE_MAP = {
     'image/png': 'png',
@@ -28,7 +29,7 @@ const storage = multer.diskStorage({
         cb(null, name + '-' + Date.now() + '.' + ext);
     }
 });
-const port = process.env.CLIENT_URL || process.env.HOST_URL;
+const urlPort = process.env.CLIENT_URL || process.env.HOST_URL;
 const passportLocalSignIn = passport.authenticate('local', 
     {session: false});
 const passportLocalVerification = passport.authenticate('local-verification', 
@@ -41,7 +42,17 @@ const passportLocalEmailAgainVerification = passport.authenticate('local-verific
 const googleAuth = passport.authenticate('googleOauth2', 
     {scope: ['profile', 'email']}, {session: false});
 const googleRedirect = passport.authenticate('googleOauth2', 
-    {session: false, successRedirect: port + '/popular', failureRedirect: port + '/auth'});
+    {session: false, successRedirect: urlPort + '/popular', failureRedirect: urlPort + '/auth'}, 
+    // function(req, res) {
+    //     console.log('aloo', req);
+    //     let responseHTML = '<html><head><title>Main</title></head><body></body><script>res = %value%; window.opener.postMessage(res, "*");window.close();</script></html>'
+    //         responseHTML = responseHTML.replace('%value%', JSON.stringify({
+    //             user: 'bla'
+    //         }));
+    //         console.log(responseHTML);
+    //         // return res.status(200).send(responseHTML);
+    // })
+);
 
 
 const userAuthorization = passport.authenticate('jwt', 
@@ -81,11 +92,21 @@ router.route('/getProfileImage')
 
 router.route('/auth/google')
     .get(
-        googleAuth,
-        UsersController.googleOauth);
+        googleAuth);
         
 router.route('/auth/google/callback')
-    .get(googleRedirect);
+    .get(googleRedirect
+        // async (req, res, next) => {
+        //     console.log('alooo');
+        //     let responseHTML = '<html><head><title>Main</title></head><body></body><script>res = %value%; window.opener.postMessage(res, "*");window.close();</script></html>'
+        //     responseHTML = responseHTML.replace('%value%', JSON.stringify({
+        //         user: req.user
+        //     }));
+        //     console.log(responseHTML);
+        //     res.status(200).send(responseHTML);
+        //     next();
+        // }
+        );
 
 router.route('/resendEmailVerification')
     .post( 
@@ -115,6 +136,11 @@ router.route('/editName')
         userAuthorization,
         validateBody(schemas.nameReset),
         UsersController.editName);
+
+router.route('/getName')
+    .get(
+        userAuthorization,
+        UsersController.getName);
 
 router.route('/deleteProfile')
     .delete(

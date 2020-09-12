@@ -12,7 +12,7 @@ const MIME_TYPE_MAP = {
     'image/jpeg': 'jpeg',
     'image/jpg': 'jpg',
     'image/webp': 'webp',
-    'image/gif': 'gif'
+    'image/gif': 'gif',
 };
 
 const storage = multer.diskStorage({
@@ -49,13 +49,18 @@ router.route('/getOnePost/:id')
         PostsController.getOnePost);
 
 router.route('/getAllUserPosts')
-.get(
-    userAuthorization,
-    PostsController.getAllUserPosts);
+    .get(
+        userAuthorization,
+        PostsController.getAllUserPosts);
 
 router.route('/getAllPosts')
     .get(
         PostsController.getAllPosts);
+
+router.route('/upvote')
+    .patch(
+        userAuthorization,
+        PostsController.upvote);
 
 router.route('/editPost/:id')
     .patch(

@@ -131,18 +131,18 @@ passport.use('googleOauth2', new googleStrategy({
     callbackURL: '/users/auth/google/callback'
     }, async (accessToken, refreshToken, profile, done) => {
         try {
+            console.log('second...');
             // console.log('accessToken', accessToken);
             // console.log('refeshToken', refreshToken);
             // console.log('profile', profile);
             
         const checkUser = await User.findOne({"google.id": profile.id}, function (err, user) {
             if (err) {
-                done(err, null);
+                done(err, user);
             }
         }); 
-        
         if (checkUser) return done("User already signed up", null);
-
+        
         const newUser = new User({
             method: 'google',
             google: {
@@ -151,8 +151,8 @@ passport.use('googleOauth2', new googleStrategy({
                 name: profile.name.givenName
             }
         });
-        
         await newUser.save();
+        console.log(newUser);
         done(null, newUser);
         } catch(error) {
             console.log('Error backend', error);

@@ -1,0 +1,12 @@
+"filename", "language", "JavaScript", "comment", "blank", "total"
+"/home/bojan/codeStuff/MATURSKI2.0/backend/server/app.js", "JavaScript", 17, 58, 4, 79
+"/home/bojan/codeStuff/MATURSKI2.0/backend/server/controllers/posts.js", "JavaScript", 171, 47, 48, 266
+"/home/bojan/codeStuff/MATURSKI2.0/backend/server/controllers/users.js", "JavaScript", 180, 49, 63, 292
+"/home/bojan/codeStuff/MATURSKI2.0/backend/server/helpers/routerHelpers.js", "JavaScript", 44, 0, 8, 52
+"/home/bojan/codeStuff/MATURSKI2.0/backend/server/lib/utils.js", "JavaScript", 21, 3, 4, 28
+"/home/bojan/codeStuff/MATURSKI2.0/backend/server/models/posts.js", "JavaScript", 40, 0, 5, 45
+"/home/bojan/codeStuff/MATURSKI2.0/backend/server/models/user.js", "JavaScript", 112, 4, 9, 125
+"/home/bojan/codeStuff/MATURSKI2.0/backend/server/passport.js", "JavaScript", 144, 7, 30, 181
+"/home/bojan/codeStuff/MATURSKI2.0/backend/server/routes/post.js", "JavaScript", 66, 0, 16, 82
+"/home/bojan/codeStuff/MATURSKI2.0/backend/server/routes/user.js", "JavaScript", 109, 19, 27, 155
+"Total", "-", 904, 187, 214, 1305

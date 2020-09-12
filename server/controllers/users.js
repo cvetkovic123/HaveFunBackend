@@ -211,15 +211,18 @@ module.exports = {
         .catch((error) => res.status(400).send({ message: `Local Sign Up Failed!${error}`}));
     },
 
+
     changePassword: async(req, res, next) => {
       // get user we want to edit
+
       const checkUser = await User.findById(req.user._id);
       if (!checkUser) return res.status(404).send({ message: 'User not found when changing password - logged In!'});
 
       // check if old password is still valid, just to be safe
       const isValidOldPassword = checkUser.isValidPassword(req.body.password);
-      if (!isValidOldPassword) return res.status(400).send({ message: "Old password not correct!"});
-
+      isValidOldPassword.then((result) => {
+        if (!result) return res.status(404).send({ message: "Old password not correct!"});   
+      });
 
       // salt new password and hash it
       const salt = await bcrypt.genSalt(10);
@@ -245,6 +248,12 @@ module.exports = {
       res.status(200).send({ message: "Name updated successfully"});
     },
 
+    getName: async(req, res, next) => {
+      const user = await User.findById(req.user._id).select('local.name -_id');
+      if(!user) return res.status(404).send({ message: "User not found!"});
+
+      res.status(200).send(user);
+    },
 
     deleteProfile: async(req, res, next) => {
       // delete profile picture from storage

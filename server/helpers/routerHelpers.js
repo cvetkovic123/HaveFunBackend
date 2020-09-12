@@ -14,14 +14,13 @@ module.exports = {
         }),
 
         postsSchema: Joi.object({
-            title: Joi.string().required(),
-            content: Joi.string().required()
+            title: Joi.string().required()
         }),
 
         passwordReset: Joi.object({
-            email: Joi.string().min(6).max(25).required(),
-            password: Joi.string().min(6).max(25).required(),
-            newPassword: Joi.string().min(6).max(25).required()
+            email: Joi.string().min(5).max(25).required(),
+            password: Joi.string().min(5).max(25).required(),
+            newPassword: Joi.string().min(5).max(25).required()
         }),
 
         nameReset: Joi.object({
@@ -34,7 +33,7 @@ module.exports = {
 
         forgotChangePassword: Joi.object({
             email: Joi.string().email().required(),
-            newPassword: Joi.string().min(6).max(25).required()
+            newPassword: Joi.string().min(5).max(25).required()
         })
     },
 

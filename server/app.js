@@ -11,13 +11,23 @@ const
     post = require('./routes/post');
     
 const app = express();
-
-// app.use(function(req, res, next) {
-//   res.header("Access-Control-Allow-Origin", process.env.CLIENT_URL + '/auth' || process.env.HOST_URL + '/auth'); // update to match the domain you will make the request from
-//   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-//   res.header("Access-Control-Allow-Headers", "Authorization, Content-Type");
-//   next();
-// });
+// var allowCrossDomain = function(req, res, next) {
+//   res.header('Access-Control-Allow-Origin', '*');
+//   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');  
+//   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
+//   if ('OPTIONS' == req.method) {
+//     res.send(200);
+//   }
+//   else {
+//     next();
+//   }
+// }; 
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
+  res.header("Access-Control-Allow-Headers", "content-type, Access-Control-Allow-Origin");
+  next();
+});
 
 app.all('/*', function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -30,7 +40,8 @@ app.use(express.static('./public'));
 
 var originsWhitelist = [
       //this is my front-end url for development
-     process.env.CLIENT_URL || process.env.HOST_URL
+     process.env.CLIENT_URL || process.env.HOST_URL,
+     
   ];
   var corsOptions = {
     origin: function(origin, callback){
@@ -40,7 +51,7 @@ var originsWhitelist = [
     credentials:true
   }
 
-app.use(cors(originsWhitelist));
+app.use(cors());
 
 app.use(bodyParser.json());
 
