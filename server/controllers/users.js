@@ -3,9 +3,11 @@ const mailgun = require('mailgun-js')({apiKey: process.env.MAILGUN_API_KEY, doma
 const bcrypt = require('bcrypt');
 const utils = require('../lib/utils');
 
+const json5 = require('json5');
 const fs = require('fs');
 const { promisify } = require('util');
 const { Post } = require('../models/posts');
+const { Comment } = require('../models/comments');
 const unlinkAsync = promisify(fs.unlink);
 
 
@@ -42,24 +44,39 @@ module.exports = {
       // set url for host if it exists ( for production, or instead use client url)
       const url = process.env.HOST_URL || process.env.CLIENT_URL;
       // prepare mailgun
-      const data = {
-        from: 'alexanderGrieves42@gmail.com',
-        to: 'bojan.cvetkovic337@gmail.com',
-        subject: 'HaveFun activation link',
-        text: `
-        <p>${url}/auth/activate?id=${token}</p>
-        `
-      };
+      // const data = {
+      //   from: 'alexanderGrieves42@gmail.com',
+      //   to: 'bojan.cvetkovic337@gmail.com',
+      //   subject: 'HaveFun activation link',
+      //   text: `
+      //   <p>${url}/auth/activate?id=${token}</p>
+      //   `
+      // };
         
-      // send mailgun 
-      mailgun.messages().send(data, function (error, body) {
-        console.log(body);
-        if (error) return res.status(500).send({message: "Could not send mailgun message for user verification"});
-      });
+      // // send mailgun 
+      // mailgun.messages().send(data, function (error, body) {
+      //   console.log(body);
+      //   if (error) return res.status(500).send({message: "Could not send mailgun message for user verification"});
+      // });
 
       // success
       await user.save().
-        then(() => res.status(200).send({ message: `Local Sign Up Success. Please verify email!`}))
+        then( async () => { 
+          
+          const allPosts = await Post.find();
+          console.log('allPosts', allPosts);
+          for (let post in allPosts){
+            console.log('new post ---------------------')
+                await Post.findOneAndUpdate({"_id": allPosts[post]._id}, {
+                  $push: { "whoUpvoted": {
+                    "userId": user._id,
+                    "isUpvoted": false
+                  }}
+                });
+          }
+            
+            res.status(200).send({ message: `Local Sign Up Success. Please verify email!`})
+        })
         .catch((error) => res.status(400).send({ message: `Local Sign Up Failed!${error}`}));
     },
 
@@ -168,6 +185,52 @@ module.exports = {
         // if an error occured
         if (!checkUser) return res.status(400).send({ message: 'Image could not be saved!'});
 
+
+        // edit localPath in all comments
+        const getAllPosts = await Post.find();
+        
+        // get a list of all post and whoUpvoted, try to find if the user's id is there (req.user._id)
+        const postWhereUserIdLeftAComment = [];
+        for (let post in getAllPosts) {
+          for (let userId in getAllPosts[post].whoUpvoted) {
+            const userIdFromWhoUpvotedPosts = json5.stringify(getAllPosts[post].whoUpvoted[userId].userId);
+            const userIdWereCheckingWith = json5.stringify(req.user._id);
+            if (userIdFromWhoUpvotedPosts === userIdWereCheckingWith) {
+              
+              if (getAllPosts[post].comments) {
+                postWhereUserIdLeftAComment.push(getAllPosts[post].comments);
+              }
+
+            }
+          }
+        }
+
+      // now we have the comments where our user previosly left a comment, 
+      // now comes the fun part of changing the name in the comments
+      console.log(postWhereUserIdLeftAComment);
+      const comments = await Comment.find();
+      // console.log(comments);
+      for (let comment in comments) {
+        console.log();
+        if (json5.stringify(comments[comment]._id) === json5.stringify(postWhereUserIdLeftAComment[comment])) {
+
+          // if comment does exist
+          for (let userComments in comments[comment].comments) {
+            // console.log(comments[comment].comments[userComments]);
+
+            if (json5.stringify(comments[comment].comments[userComments].whoWroteItId) === json5.stringify(req.user._id)) {
+              console.log('true', comments[comment].comments[userComments]._id);
+              const editedCommentName = await Comment.findOneAndUpdate({"_id": postWhereUserIdLeftAComment[comment], "comments._id": comments[comment].comments[userComments]._id},
+                    {$set: {"comments.$.image": url + "/profileImage/" + req.file.filename}}, {new: true});
+
+                if (!editedCommentName) return res.status(400).send({ message: "Something went wrong when updating specific comment"});
+            }
+          }
+          // console.log('true');
+        }
+      }
+
+
         // success
         await checkUser.save().
           then(() => { res.status(200).send({ message: 'Image uploaded!', path: checkUser.profileImage.localPath})}).
@@ -243,6 +306,51 @@ module.exports = {
       // find name and update it, using patch crud here so it only updates that single piece of data
       const changeName = await User.findByIdAndUpdate(req.user._id,{"local.name": req.body.name}, {new: true});
       if (!changeName) return res.status(400).send({ message: "Name could not be updated"});
+
+      // edit name in all comments
+      const getAllPosts = await Post.find();
+      
+      // get a list of all post and whoUpvoted, try to find if the user's id is there (req.user._id)
+      const postWhereUserIdLeftAComment = [];
+      for (let post in getAllPosts) {
+        for (let userId in getAllPosts[post].whoUpvoted) {
+          const userIdFromWhoUpvotedPosts = json5.stringify(getAllPosts[post].whoUpvoted[userId].userId);
+          const userIdWereCheckingWith = json5.stringify(req.user._id);
+          if (userIdFromWhoUpvotedPosts === userIdWereCheckingWith) {
+            
+            if (getAllPosts[post].comments) {
+              postWhereUserIdLeftAComment.push(getAllPosts[post].comments);
+            }
+
+          }
+        }
+      }
+      // now we have the comments where our user previosly left a comment, 
+      // now comes the fun part of changing the name in the comments
+      console.log(postWhereUserIdLeftAComment);
+      const comments = await Comment.find();
+      // console.log(comments);
+      for (let comment in comments) {
+        console.log();
+        if (json5.stringify(comments[comment]._id) === json5.stringify(postWhereUserIdLeftAComment[comment])) {
+
+          // if comment does exist
+          for (let userComments in comments[comment].comments) {
+            // console.log(comments[comment].comments[userComments]);
+
+            if (json5.stringify(comments[comment].comments[userComments].whoWroteItId) === json5.stringify(req.user._id)) {
+              console.log('true', comments[comment].comments[userComments]._id);
+              const editedCommentName = await Comment.findOneAndUpdate({"_id": postWhereUserIdLeftAComment[comment], "comments._id": comments[comment].comments[userComments]._id},
+                    {$set: {"comments.$.name": req.body.name}}, {new: true});
+
+                if (!editedCommentName) return res.status(400).send({ message: "Something went wrong when updating specific comment"});
+            }
+          }
+          // console.log('true');
+        }
+      }
+
+      // NOW 
 
       // success
       res.status(200).send({ message: "Name updated successfully"});

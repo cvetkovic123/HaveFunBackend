@@ -33,10 +33,10 @@ const postSchema = new Schema({
         type: Date,
         default: Date.now
     },
-    comments: [{
+    comments: {
         type: Schema.Types.ObjectId,
         ref: 'Comments'
-    }],
+    },
     picture: imageSchema
 });
 

@@ -35,16 +35,32 @@ module.exports = {
             }
         });
 
+        const allUsers = await User.find();
+        const usersIdHolder = [];
+        console.log('allUsers', allUsers);
+        for (const user of allUsers) {
+            usersIdHolder.push(user._id);
+        }
         await post.save().
-            then(() => {
+        then( async(result) => {
+
                 User.findOneAndUpdate({"_id": req.user._id}, { $push: {"posts": post._id}}, {new: true}, function(error, result) {
                     if (error) {
                         console.log('Error while updating worker new post.', error);
                     }
                     console.log('result', result);
                 });
-                res.status(200).send({ message: 'New post created'});
-            })
+                for (let i = 0; i < usersIdHolder.length; i++) {
+                    await Post.findOneAndUpdate({"_id": post._id}, { $push: {"whoUpvoted": {
+                        "userId": usersIdHolder[i],
+                        "isUpvoted": false
+                    }}});
+                }
+
+                const allPosts = await Post.find();
+ 
+                return res.status(200).send({ message: allPosts});
+            });
     },
 
     upvote: async(req, res, next) => {
@@ -73,8 +89,6 @@ module.exports = {
         for (let upvotee in post.whoUpvoted) {
             const userWhoIsUpvoting =  json5.stringify(req.user.id);
             const dbUpvotees = json5.stringify(post.whoUpvoted[upvotee].userId);
-            console.log('database saved upvotees', dbUpvotees);
-            console.log('new guy or old', userWhoIsUpvoting);
             if (dbUpvotees === userWhoIsUpvoting) {
                 const flipValue =  !post.whoUpvoted[upvotee].isUpvoted;
                 let addValue;
@@ -84,51 +98,27 @@ module.exports = {
                     addValue = -1;
                 }
                 // if this dude already upvoted, then we just need to edit the isUpvoted from true to false without creating a new object
-                console.log('alo isti suu');
+                // console.log('alo isti suu');
                 const oldUpvoteGoingDownvotee = await Post.findOneAndUpdate({"_id": req.body.postId, "whoUpvoted.userId": req.user.id}, 
                 {$set: {"whoUpvoted.$.isUpvoted": flipValue}, $inc: {points: addValue}}, {new: true, overwrite: true})
+                console.log(oldUpvoteGoingDownvotee);
                 return res.status(200).send({ message: oldUpvoteGoingDownvotee});
             } 
-            // else if (dbUpvotees !== userWhoIsUpvoting){
-
-            //     console.log('eeeee');
-            // };
             newUser = userWhoIsUpvoting;
         }
-        console.log('newUser', newUser);
+        // console.log('newUser', newUser);
         var result = newUser.substring(1, newUser.length-1);
         // // if a new upvotee comes along, we need to create a totaly new object for him
         const upvote = await Post.findByIdAndUpdate(req.body.postId, {$push: {"whoUpvoted": {"userId": result, "isUpvoted": true}}, $inc: {"points": 1}});
         if (!upvote) return res.status(404).send({message: 'Post could not be found or edited'});
         return res.status(200).send({ message: upvote});
-
-        // 
-
-        // const ifWhoUpvoted = await Post.findById(req.body.postId, function (error, user) {
-        //     // so we have post
-        //     // now find ifwhoupvoted exists
-        //     const findIfWhoUpvotedExits = user.find({"whoUpvoted.userId": req.user.id});
-        //     console.log(findIfWhoUpvotedExits);
-        // });
-
-        // search for the post upvote if it already exists or is a new one
-        // const newUpvote = await Post.findByIdAndUpdate(req.body.postId)
-
-        // else if somebody already has upvoted 
-
-            
-        // console.log('aloooo');
-        // change isUpvoted from true to false and isDownvoted to false as well
-
     },
 
     getOnePost: async(req, res, next) => {
-        const checkPost = await Post.findById(req.params.id);
-        if (!checkPost) return res.status(404).send({ message: "Post not found"});
-        const checkPostUser = await User.findOne({"posts": checkPost});
-        if (!checkPostUser) return res.status(404).send({ message: "Post not found in user"});
+        const checkPost = await Post.findById(req.params.postId);
+        if (!checkPost) return res.status(200).send({ message: false});
 
-        res.status(200).send({message: checkPost});
+        res.status(200).send({message: true});
     },
 
     getAllUserPosts: async(req, res, next) => {
@@ -153,14 +143,34 @@ module.exports = {
 
     },
 
-    getAllPosts: async(req, res, next) => {
-        // get EVERYTHING
-        const checkPosts = await Post.find().select('-__v');
+    getAllFreshPosts: async(req, res, next) => {
+        // get every post with points bellow 5 
+        const checkPosts = await Post.find({"points": { $lt: 5}}).select('-__v');
         if (!checkPosts) res.status(200).send({message: "No posts found"});
-
+        const reverseCheckPosts = checkPosts.slice().reverse();
         // success
-        res.status(200).send({message: checkPosts});
+        res.status(200).send({message: reverseCheckPosts});
     },
+
+    getAllTrendingPosts: async(req, res, next) => {
+        // get every post with point below 25
+        const checkPosts = await Post.find({"points": { $lt: 25, $gt: 5}}).select('-__v');
+        if (!checkPosts) res.status(200).send({message: "No posts found"});
+        const reverseCheckPosts = checkPosts.slice().reverse();
+        // success
+        res.status(200).send({message: reverseCheckPosts});
+    },
+
+    getAllPopularPosts: async(req, res, next) => {
+        // get EVERYTHING
+        const checkPosts = await Post.find({"points": { $gt: 25}}).select('-__v');
+        if (!checkPosts) res.status(200).send({message: "No posts found"});
+        const reverseCheckPosts = checkPosts.slice().reverse();
+        // success
+        res.status(200).send({message: reverseCheckPosts});
+    },
+
+
 
     editPost: async(req, res, next) => {
         const url = req.protocol + '://' + req.get('host');

@@ -8,6 +8,7 @@ const
     passport = require('passport'),
 
     user = require('./routes/user'),
+    comments = require('./routes/comments')
     post = require('./routes/post');
     
 const app = express();
@@ -23,16 +24,16 @@ const app = express();
 //     next();
 //   }
 // }; 
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
-  res.header("Access-Control-Allow-Headers", "content-type, Access-Control-Allow-Origin");
-  next();
-});
+// app.use(function(req, res, next) {
+//   res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
+//   res.header("Access-Control-Allow-Headers", "content-type, Access-Control-Allow-Origin");
+//   next();
+// });
 
-app.all('/*', function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  next();
-});
+// app.all('/*', function(req, res, next) {
+//   res.header("Access-Control-Allow-Origin", "*");
+//   next();
+// });
 
 app.use(morgan('dev'));
 app.use(express.static('./public'));
@@ -51,7 +52,7 @@ var originsWhitelist = [
     credentials:true
   }
 
-app.use(cors());
+app.use(cors(corsOptions));
 
 app.use(bodyParser.json());
 
@@ -75,5 +76,6 @@ if (process.env.NODE_ENV == 'test') {
 
 app.use('/users', user);
 app.use('/posts', post);
+app.use('/comments', comments);
 
 module.exports = app;

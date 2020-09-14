@@ -17,6 +17,11 @@ module.exports = {
             title: Joi.string().required()
         }),
 
+        comment: Joi.object({
+            postId: Joi.string().min(24).max(24).required(),
+            comment: Joi.string().max(500).required()
+        }),
+
         passwordReset: Joi.object({
             email: Joi.string().min(5).max(25).required(),
             password: Joi.string().min(5).max(25).required(),
@@ -43,7 +48,6 @@ module.exports = {
             if (validate.error) {
             return res.status(400).send(validate.error.details[0].message);
           }
-          console.log('why is it running');
           if (!req.value) { req.value = {} };
           req.value['body'] = validate.value;
           next();

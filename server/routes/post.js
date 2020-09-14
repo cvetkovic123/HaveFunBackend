@@ -5,7 +5,6 @@ const multer = require('multer');
 
 const PostsController = require('../controllers/posts');
 const { validateBody, schemas } = require('../helpers/routerHelpers');
-const { Post } = require('../models/posts');
 
 const MIME_TYPE_MAP = {
     'image/png': 'png',
@@ -43,7 +42,7 @@ router.route('/newPost')
         PostsController.newPost);
 
 
-router.route('/getOnePost/:id')
+router.route('/checkIfPostExists/:postId')
     .get(
         userAuthorization,
         PostsController.getOnePost);
@@ -53,9 +52,17 @@ router.route('/getAllUserPosts')
         userAuthorization,
         PostsController.getAllUserPosts);
 
-router.route('/getAllPosts')
+router.route('/getAllFreshPosts')
     .get(
-        PostsController.getAllPosts);
+        PostsController.getAllFreshPosts);
+
+router.route('/getAllTrendingPosts')
+    .get(
+        PostsController.getAllTrendingPosts);
+
+router.route('/getAllPopularPosts')
+    .get(
+        PostsController.getAllPopularPosts);
 
 router.route('/upvote')
     .patch(
