@@ -57,9 +57,10 @@ module.exports = {
 
         if (!newComments) return res.status(400).send({ message: "Comment either not added or something else wen't wrong."});
         
-        const returnAllComments = await Comment.findById(postIfExists.comments);
+        let returnAllComments = await Comment.findById(postIfExists.comments);
 
-
+        const reverseComments = returnAllComments.comments.slice().reverse();
+        returnAllComments.comments = reverseComments;
         return res.status(200).send({ message: returnAllComments});
 
     },
@@ -108,9 +109,10 @@ module.exports = {
 
         // check if comment exits
         if (!postIfExists.comments) return res.status(200).send({ message: postIfExists});
-        console.log('postIfExists comments', postIfExists.comments);
-        const comments = await Comment.findById(postIfExists.comments).select('-__v');
-        console.log('comments', postIfExists);
+        // console.log('postIfExists comments', postIfExists.comments);
+        let comments = await Comment.findById(postIfExists.comments).select('-__v');
+        const reverseComments = comments.comments.slice().reverse();
+        comments.comments = reverseComments;
         
         res.status(200).send({ message: comments});
 
