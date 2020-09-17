@@ -102,21 +102,19 @@ module.exports = {
 
     getAllComments: async(req, res, next) => {
         console.log(req.params.postId);
-        // check if postExists
-        const postIfExists = await Post.findById(req.params.postId);
-        if (!postIfExists) return res.status(404).send({ message: "This post was deleted."})
+        // // check if postExists
+        const postIfExists = await Post.findById(req.params.postId);1
+        if (!postIfExists.comments) return res.status(200).send({ message: "No comments yet"});
 
-
-        // check if comment exits
-        if (!postIfExists.comments) return res.status(200).send({ message: postIfExists});
-        // console.log('postIfExists comments', postIfExists.comments);
         let comments = await Comment.findById(postIfExists.comments).select('-__v');
+        console.log(comments);
+        // res.status(404);
         const reverseComments = comments.comments.slice().reverse();
         comments.comments = reverseComments;
         
-        res.status(200).send({ message: comments});
+        return res.status(200).send({ message: comments});
 
-        // console.log(req.params.commentId);
+        console.log('this should not be seen');
     },
 
     deleteComment: async(req, res, next) => {

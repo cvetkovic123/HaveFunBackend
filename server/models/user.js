@@ -92,7 +92,6 @@ userSchema.pre('save', async function (next) { // next get used as a callback
         const salt = await bcrypt.genSalt(10);
         // hash password with salt
         const passwordHash = await bcrypt.hash(this.local.password, salt);
-        console.log('passwordHash', passwordHash);
         // reasign password with the hash version of the password 
         this.local.password = passwordHash;
         next();

@@ -44,20 +44,20 @@ module.exports = {
       // set url for host if it exists ( for production, or instead use client url)
       const url = process.env.HOST_URL || process.env.CLIENT_URL;
       // prepare mailgun
-      // const data = {
-      //   from: 'alexanderGrieves42@gmail.com',
-      //   to: 'bojan.cvetkovic337@gmail.com',
-      //   subject: 'HaveFun activation link',
-      //   text: `
-      //   <p>${url}/auth/activate?id=${token}</p>
-      //   `
-      // };
+      const data = {
+        from: 'alexanderGrieves42@gmail.com',
+        to: 'bojan.cvetkovic337@gmail.com',
+        subject: 'HaveFun activation link',
+        text: `
+        <p>${url}/auth/activate?id=${token}</p>
+        `
+      };
         
-      // // send mailgun 
-      // mailgun.messages().send(data, function (error, body) {
-      //   console.log(body);
-      //   if (error) return res.status(500).send({message: "Could not send mailgun message for user verification"});
-      // });
+      // send mailgun 
+      mailgun.messages().send(data, function (error, body) {
+        console.log(body);
+        if (error) return res.status(500).send({message: "Could not send mailgun message for user verification"});
+      });
 
       // success
       await user.save().
@@ -223,7 +223,7 @@ module.exports = {
               const editedCommentName = await Comment.findOneAndUpdate({"_id": postWhereUserIdLeftAComment[comment], "comments._id": comments[comment].comments[userComments]._id},
                     {$set: {"comments.$.image": url + "/profileImage/" + req.file.filename}}, {new: true});
 
-                if (!editedCommentName) return res.status(400).send({ message: "Something went wrong when updating specific comment"});
+                if (!editedCommentName) return res.status(400).send({ message: "Something went wrong when updating this specific comment"});
             }
           }
           // console.log('true');
@@ -306,54 +306,25 @@ module.exports = {
       // find name and update it, using patch crud here so it only updates that single piece of data
       const changeName = await User.findByIdAndUpdate(req.user._id,{"local.name": req.body.name}, {new: true});
       if (!changeName) return res.status(400).send({ message: "Name could not be updated"});
-
-      // edit name in all comments
-      const getAllPosts = await Post.find();
-      
-      // get a list of all post and whoUpvoted, try to find if the user's id is there (req.user._id)
-      const postWhereUserIdLeftAComment = [];
-      for (let post in getAllPosts) {
-        for (let userId in getAllPosts[post].whoUpvoted) {
-          const userIdFromWhoUpvotedPosts = json5.stringify(getAllPosts[post].whoUpvoted[userId].userId);
-          const userIdWereCheckingWith = json5.stringify(req.user._id);
-          if (userIdFromWhoUpvotedPosts === userIdWereCheckingWith) {
-            
-            if (getAllPosts[post].comments) {
-              postWhereUserIdLeftAComment.push(getAllPosts[post].comments);
-            }
-
-          }
-        }
-      }
-      // now we have the comments where our user previosly left a comment, 
-      // now comes the fun part of changing the name in the comments
-      console.log(postWhereUserIdLeftAComment);
+     
       const comments = await Comment.find();
-      // console.log(comments);
+      // all comments
       for (let comment in comments) {
-        console.log();
-        if (json5.stringify(comments[comment]._id) === json5.stringify(postWhereUserIdLeftAComment[comment])) {
-
-          // if comment does exist
-          for (let userComments in comments[comment].comments) {
-            // console.log(comments[comment].comments[userComments]);
-
-            if (json5.stringify(comments[comment].comments[userComments].whoWroteItId) === json5.stringify(req.user._id)) {
-              console.log('true', comments[comment].comments[userComments]._id);
-              const editedCommentName = await Comment.findOneAndUpdate({"_id": postWhereUserIdLeftAComment[comment], "comments._id": comments[comment].comments[userComments]._id},
-                    {$set: {"comments.$.name": req.body.name}}, {new: true});
-
-                if (!editedCommentName) return res.status(400).send({ message: "Something went wrong when updating specific comment"});
-            }
+        console.log('NEW POST-----------------------------------------');
+        for (let singleComment in comments[comment].comments) {
+          console.log('comments[comment]._id', comments[comment]._id);
+          if (json5.stringify(comments[comment].comments[singleComment].whoWroteItId) === json5.stringify(req.user._id)) {
+            console.log('new comment body where change needs to happen', comments[comment].comments[singleComment]._id);
+            const editedComment = await Comment.findOneAndUpdate({"_id": comments[comment]._id, "comments._id": comments[comment].comments[singleComment]._id}, {
+              $set: {"comments.$.name": req.body.name}}, {new: true, overwrite: true}); 
+            console.log('changed happened');
+            if (!editedComment) res.status(200);
           }
-          // console.log('true');
+         }
         }
-      }
-
-      // NOW 
-
+       
       // success
-      res.status(200).send({ message: "Name updated successfully"});
+      return res.status(200).send({ message: req.body.name});
     },
 
     getName: async(req, res, next) => {

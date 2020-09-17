@@ -58,8 +58,9 @@ module.exports = {
                 }
 
                 const allPosts = await Post.find();
+                const reverseAllPosts = allPosts.slice().reverse();
  
-                return res.status(200).send({ message: allPosts});
+                return res.status(200).send({ message: reverseAllPosts});
             });
     },
 
@@ -146,6 +147,7 @@ module.exports = {
     getAllFreshPosts: async(req, res, next) => {
         // get every post with points bellow 5 
         const checkPosts = await Post.find({"points": { $lt: 5}}).select('-__v');
+        console.log('posts', checkPosts);
         if (!checkPosts) res.status(200).send({message: "No posts found"});
         const reverseCheckPosts = checkPosts.slice().reverse();
         // success
