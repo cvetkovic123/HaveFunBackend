@@ -45,12 +45,10 @@ module.exports = {
       const url = process.env.HOST_URL || process.env.CLIENT_URL;
       // prepare mailgun
       const data = {
-        from: 'alexanderGrieves42@gmail.com',
-        to: 'bojan.cvetkovic337@gmail.com',
+        from: 'havefunalways20@gmail.com',
+        to: req.body.email,
         subject: 'HaveFun activation link',
-        text: `
-        <p>${url}/auth/activate?id=${token}</p>
-        `
+        text:`${url}/auth/activate?id=${token}`
       };
         
       // send mailgun 
@@ -258,12 +256,10 @@ module.exports = {
       const token = utils.signToken(getUser);
       const url = process.env.HOST_URL || process.env.CLIENT_URL;
       const data = {
-        from: 'alexanderGrieves42@gmail.com',
-        to: 'bojan.cvetkovic337@gmail.com',
-        subject: 'HaveFun activation link',
-        text: `
-        <p>${url}/auth/activate?id=${token}</p>
-        `
+        from: 'havefunalways20@gmail.com',
+        to: req.body.email,
+        subject: 'HaveFun re-activation link',
+        text:`${url}/auth/activate?id=${token}`
       };
        
       mailgun.messages().send(data, function (error, body) {
