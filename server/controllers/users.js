@@ -1,7 +1,7 @@
 const { User } = require('../models/user');
 const mailgun = require('mailgun-js')({apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN_NAME});
 const bcrypt = require('bcrypt');
-const utils = require('../lib/utils');
+const utils = require('../lib/generate_tokens');
 
 const json5 = require('json5');
 const fs = require('fs');
@@ -163,7 +163,8 @@ module.exports = {
 
       const user = await User.findById(req.user._id);
       // check if user exists and if he already has a profile picture
-      if (!user && user.profileImage) {
+      if (user && user.profileImage) {
+        console.log('alo');
         unlinkAsync(user.profileImage.path);
       }
       
