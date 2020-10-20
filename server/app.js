@@ -28,7 +28,7 @@ app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
 //   res.header("Access-Control-Allow-Headers", "content-type, Access-Control-Allow-Origin");
 //   next();
-// });
+});
 
 // app.all('/*', function(req, res, next) {
 //   res.header("Access-Control-Allow-Origin", "*");
@@ -44,13 +44,13 @@ var originsWhitelist = [
      process.env.CLIENT_URL || process.env.HOST_URL,
      
   ];
-  var corsOptions = {
-    origin: function(origin, callback){
-          var isWhitelisted = originsWhitelist.indexOf(origin) !== -1;
-          callback(null, isWhitelisted);
-    },
-    credentials:true
-  }
+var corsOptions = {
+  origin: function(origin, callback){
+        var isWhitelisted = originsWhitelist.indexOf(origin) !== -1;
+        callback(null, isWhitelisted);
+  },
+  credentials:true
+}
 
 app.use(cors(corsOptions));
 
