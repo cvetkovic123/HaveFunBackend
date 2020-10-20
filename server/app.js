@@ -24,11 +24,11 @@ const app = express();
 //     next();
 //   }
 // }; 
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
-//   res.header("Access-Control-Allow-Headers", "content-type, Access-Control-Allow-Origin");
-//   next();
-});
+// app.use(function(req, res, next) {
+//   res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
+// //   res.header("Access-Control-Allow-Headers", "content-type, Access-Control-Allow-Origin");
+// //   next();
+// });
 
 // app.all('/*', function(req, res, next) {
 //   res.header("Access-Control-Allow-Origin", "*");
@@ -39,20 +39,20 @@ app.use(morgan('dev'));
 app.use(express.static('./public'));
 
 
-var originsWhitelist = [
-      //this is my front-end url for development
-     process.env.CLIENT_URL || process.env.HOST_URL,
+// var originsWhitelist = [
+//       //client-url is for local development
+//      process.env.CLIENT_URL || process.env.HOST_URL,
      
-  ];
-var corsOptions = {
-  origin: function(origin, callback){
-        var isWhitelisted = originsWhitelist.indexOf(origin) !== -1;
-        callback(null, isWhitelisted);
-  },
-  credentials:true
-}
+//   ];
+// var corsOptions = {
+//   origin: function(origin, callback){
+//         var isWhitelisted = originsWhitelist.indexOf(origin) !== -1;
+//         callback(null, isWhitelisted);
+//   },
+//   credentials:true
+// }
 
-app.use(cors(corsOptions));
+app.use(cors());
 
 app.use(bodyParser.json());
 
