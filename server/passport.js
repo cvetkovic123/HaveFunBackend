@@ -125,40 +125,40 @@ passport.use('local-verification-again', new passportLocal({
     }
 }));
 
-passport.use('googleOauth2', new googleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/users/auth/google/callback'
-    }, async (accessToken, refreshToken, profile, done) => {
-        try {
-            console.log('second...');
-            // console.log('accessToken', accessToken);
-            // console.log('refeshToken', refreshToken);
-            // console.log('profile', profile);
+// passport.use('googleOauth2', new googleStrategy({
+//     clientID: process.env.GOOGLE_CLIENT_ID,
+//     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//     callbackURL: '/users/auth/google/callback'
+//     }, async (accessToken, refreshToken, profile, done) => {
+//         try {
+//             console.log('second...');
+//             // console.log('accessToken', accessToken);
+//             // console.log('refeshToken', refreshToken);
+//             // console.log('profile', profile);
             
-        const checkUser = await User.findOne({"google.id": profile.id}, function (err, user) {
-            if (err) {
-                done(err, user);
-            }
-        }); 
-        if (checkUser) return done("User already signed up", null);
+//         const checkUser = await User.findOne({"google.id": profile.id}, function (err, user) {
+//             if (err) {
+//                 done(err, user);
+//             }
+//         }); 
+//         if (checkUser) return done("User already signed up", null);
         
-        const newUser = new User({
-            method: 'google',
-            google: {
-                id: profile.id,
-                email: profile.emails[0].value,
-                name: profile.name.givenName
-            }
-        });
-        await newUser.save();
-        console.log(newUser);
-        done(null, newUser);
-        } catch(error) {
-            console.log('Error backend', error);
-        }
-    }
-));
+//         const newUser = new User({
+//             method: 'google',
+//             google: {
+//                 id: profile.id,
+//                 email: profile.emails[0].value,
+//                 name: profile.name.givenName
+//             }
+//         });
+//         await newUser.save();
+//         console.log(newUser);
+//         done(null, newUser);
+//         } catch(error) {
+//             console.log('Error backend', error);
+//         }
+//     }
+// ));
 
 passport.use('profileImageUpload', new JwtStrategy({
     jwtFromRequest: ExtractJwt.fromHeader('authorization'),
